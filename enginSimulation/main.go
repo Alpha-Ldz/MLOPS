@@ -249,7 +249,7 @@ func main() {
 
 
 	// config kafka
-	Configure([]string{"localhost:9092"}, "simulation", "quickstart-events")
+	Configure([]string{"localhost:9092"}, "simulation", "rapport-topic")
 
 	bike := NewBike(locations)
 
