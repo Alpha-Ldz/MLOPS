@@ -12,6 +12,7 @@ import (
 	"github.com/segmentio/kafka-go/snappy"
 	"context"
 	"encoding/json"
+	"fmt"
 )
 
 var writer *kafka.Writer
@@ -65,9 +66,9 @@ type Engine struct {
 }
 
 type Rapport struct {
-	id int
-	user int
-	vType int
+	Id 	  int
+	User int
+	VType int
 	Longitude float64
 	Latitude float64
 	Status string
@@ -175,9 +176,9 @@ func (e *Engine) Update(locations []Tuple) {
 
 	//push a rapport to kafka
 	r := Rapport{
-		id: e.id,
-		user: e.user,
-		vType: e.vType,
+		Id: e.id,
+		User: e.user,
+		VType: e.vType,
 		Longitude: e.Longitude,
 		Latitude: e.Latitude,
 		Status: e.Status,
@@ -185,6 +186,7 @@ func (e *Engine) Update(locations []Tuple) {
 
 	b, _ := json.Marshal(r)
 
+	fmt.Println(string(b))
 
 	Push(context.Background(), []byte(strconv.Itoa(e.id)), []byte(b))
 }
@@ -203,7 +205,7 @@ func NewBike(locations []Tuple) *Engine {
 	e.Speed = 0.0001
 	e.DestLong = 0
 	e.DestLat = 0
-	e.user = 0
+	e.user = rand.Intn(100)
 
 	return &e
 }
@@ -221,7 +223,7 @@ func NewScooter(locations []Tuple) *Engine {
 	e.Speed = 0.0002
 	e.DestLong = 0
 	e.DestLat = 0
-	e.user = 0
+	e.user = rand.Intn(100)
 
 	return &e
 }
@@ -239,9 +241,16 @@ func NewMotorcycle(locations []Tuple) *Engine {
 	e.Speed = 0.0003
 	e.DestLong = 0
 	e.DestLat = 0
-	e.user = 0
+	e.user = rand.Intn(100)
 
 	return &e
+}
+
+func engineLoop(locations []Tuple, e *Engine) {
+	for {
+		e.Update(locations)
+		time.Sleep(100 * time.Millisecond)
+	}
 }
 
 func main() {
@@ -253,8 +262,14 @@ func main() {
 
 	bike := NewBike(locations)
 
+	go engineLoop(locations, bike)
+
+	// while the user do not write quit in the console the program will continue to run
+	reader := bufio.NewReader(os.Stdin)
 	for {
-		bike.Update(locations)
-		time.Sleep(30 * time.Millisecond)
+		text, _ := reader.ReadString('\n')
+		if strings.TrimSpace(text) == "quit" {
+			break
+		}
 	}
 }
