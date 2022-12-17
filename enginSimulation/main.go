@@ -17,6 +17,8 @@ import (
 
 var writer *kafka.Writer
 
+var writer2 *kafka.Writer
+
 func Configure(kafkaBrokerUrls []string, clientId string, topic string) (w *kafka.Writer, err error) {
 	dialer := &kafka.Dialer{
 		Timeout:  10 * time.Second,
@@ -37,6 +39,26 @@ func Configure(kafkaBrokerUrls []string, clientId string, topic string) (w *kafk
 	return w, nil
 }
 
+func Configure2(kafkaBrokerUrls []string, clientId string, topic string) (w *kafka.Writer, err error) {
+	dialer := &kafka.Dialer{
+		Timeout:  10 * time.Second,
+		ClientID: clientId,
+	}
+
+	config := kafka.WriterConfig{
+		Brokers:          kafkaBrokerUrls,
+		Topic:            topic,
+		Balancer:         &kafka.LeastBytes{},
+		Dialer:           dialer,
+		WriteTimeout:     10 * time.Second,
+		ReadTimeout:      10 * time.Second,
+		CompressionCodec: snappy.NewCompressionCodec(),
+	}
+	w = kafka.NewWriter(config)
+	writer2 = w
+	return w, nil
+}
+
 func Push(parent context.Context, key, value []byte) (err error) {
 	message := kafka.Message{
 		Key:   key,
@@ -46,6 +68,14 @@ func Push(parent context.Context, key, value []byte) (err error) {
 	return writer.WriteMessages(parent, message)
 }
 
+func Push2(parent context.Context, key, value []byte) (err error) {
+	message := kafka.Message{
+		Key:   key,
+		Value: value,
+		Time:  time.Now(),
+	}
+	return writer2.WriteMessages(parent, message)
+}
 
 const (
 	Bike = iota
@@ -72,6 +102,12 @@ type Rapport struct {
 	Longitude float64
 	Latitude float64
 	Status string
+}
+
+type Rapport2 struct {
+	Id 	  int
+	Longitude float64
+	Latitude float64
 }
 
 type Tuple struct {
@@ -189,6 +225,23 @@ func (e *Engine) Update(locations []Tuple) {
 	fmt.Println(string(b))
 
 	Push(context.Background(), []byte(strconv.Itoa(e.id)), []byte(b))
+
+	a := Rapport2{
+		Id: e.id,
+		Longitude: e.Longitude,
+		Latitude: e.Latitude,
+	}
+
+	b, _ = json.Marshal(a)
+
+	if e.vType == Scooter {
+		Configure2([]string{"localhost:9092"}, "simulation", "Scooter-topic")
+	} else if e.vType == Bike {
+		Configure2([]string{"localhost:9092"}, "simulation", "Bike-topic")
+	} else if e.vType == Motorcycle {
+		Configure2([]string{"localhost:9092"}, "simulation", "Motorcycle-topic")
+	}
+	Push2(context.Background(), []byte(strconv.Itoa(e.id)), []byte(b))
 }
 
 func NewBike(locations []Tuple) *Engine {
@@ -258,11 +311,16 @@ func main() {
 
 
 	// config kafka
-	Configure([]string{"localhost:9092"}, "simulation", "rapport-topic")
+	Configure([]string{"localhost:9092"}, "simulation", "rapport-topic2")
+
 
 	bike := NewBike(locations)
+	scooter := NewScooter(locations)
+	motorcycle := NewMotorcycle(locations)
 
 	go engineLoop(locations, bike)
+	go engineLoop(locations, scooter)
+	go engineLoop(locations, motorcycle)
 
 	// while the user do not write quit in the console the program will continue to run
 	reader := bufio.NewReader(os.Stdin)

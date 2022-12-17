@@ -12,7 +12,7 @@ import (
 
 // Function that return a string
 func read(conn *websocket.Conn){
-    topic := "rapport-topic"
+    topic := "website-topic"
     partition := 0
 
 

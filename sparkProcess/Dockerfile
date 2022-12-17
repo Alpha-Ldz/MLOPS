@@ -12,4 +12,4 @@ RUN pip --no-cache-dir install pyspark==${PYSPARK_VERSION}
 
 ADD process.py /process.py
 
-RUN spark-submit --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.0.1 process.py
+#CMD spark-submit --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.0.1 process.py
