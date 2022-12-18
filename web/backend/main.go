@@ -36,7 +36,7 @@ func setupConsumer(topic string) {
 
 func main() {
 	
-	go setupConsumer("rapport-topic2")
+	go setupConsumer("rapport-topic")
 
 	http.HandleFunc("/random", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add("Access-Control-Allow-Origin", "*")

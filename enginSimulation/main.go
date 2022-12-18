@@ -258,7 +258,7 @@ func main() {
 
 
 	// config kafka
-	Configure([]string{"localhost:9092"}, "simulation", "rapport-topic2")
+	Configure([]string{"localhost:9092"}, "simulation", "rapport-topic")
 
 
 	bike := NewBike(locations)
