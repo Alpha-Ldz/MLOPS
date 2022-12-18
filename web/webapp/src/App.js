@@ -11,44 +11,41 @@ import { w3cwebsocket as W3CWebSocket } from "websocket";
 const client = new W3CWebSocket('ws://localhost:8080/ws');
 
 function Icon(props) {
-  if (props.type === 1) {
-    return <Marker latitude={props.latitude} longitude={props.longitude}><img src={scooter} alt="scooter" width="20" height="20" /></Marker>;
-  } else if (props.type === 2) {
-    return <Marker latitude={props.latitude} longitude={props.longitude}><img src={trotinette} alt="trotinette" width="20" height="20" /></Marker>;
-  } else if (props.type === 0) {
-    return <Marker latitude={props.latitude} longitude={props.longitude}><img src={bike} alt="bike" width="20" height="20" /></Marker>;
+
+  props = JSON.parse(props.props);
+
+
+  if (props.VType === 1) {
+    return <Marker latitude={props.Longitude} longitude={props.Latitude}><img src={scooter} alt="scooter" width="20" height="20" /></Marker>;
+  } else if (props.VType === 2) {
+    return <Marker latitude={props.Longitude} longitude={props.Latitude}><img src={trotinette} alt="trotinette" width="20" height="20" /></Marker>;
+  } else if (props.VType === 0) {
+    return <Marker latitude={props.Longitude} longitude={props.Latitude}><img src={bike} alt="bike" width="20" height="20" /></Marker>;
   }
 }
 
 function MapIcons(props) {
   const icons = props.data;
-  const listMarkers = Object.keys(icons).map((key) =>
-    <Icon key={key} type={icons[key].type} longitude={icons[key].latitude} latitude={icons[key].longitude} />
-  );
 
-  console.log(listMarkers);
+
+  const listMarkers = Object.keys(icons).map((key) =>
+    <Icon key={key} props={icons[key]}/>
+  );
 
   return <div> {listMarkers} </div>
 }
 
 export default function App() {
-  const [state, setState] = React.useState({});
+  const [message, setMessage] = React.useState('');
 
   React.useEffect(() => {
-    client.onopen = () => {
-      console.log('WebSocket Client Connected');
-    };
-    client.onmessage = (message) => {
-      const dataFromServer = JSON.parse(message.data);
+    const interval = setInterval(() => {
+      fetch('http://localhost:3333/random')
+        .then(response => response.text())
+        .then(message => setMessage(JSON.parse(message)));
+    }, 1000);
 
-      const tmp = {type: dataFromServer.VType, longitude: dataFromServer.Longitude, latitude: dataFromServer.Latitude};
-      
-      setState(prevState => ({
-        ...prevState,
-        [dataFromServer.Id]: tmp
-      }));
-
-    };
+    return () => clearInterval(interval);
   }, []);
 
   return (
@@ -62,7 +59,7 @@ export default function App() {
       mapStyle="mapbox://styles/mapbox/streets-v9"
       mapboxAccessToken={process.env.REACT_APP_MAPBOX_ACCESS_TOKEN}
     >
-      <MapIcons data={state} />
+      <MapIcons data={message} />
     </Map>
   );
 }
